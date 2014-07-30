@@ -15,6 +15,8 @@ from Tribler.Main.vwxGUI import forceWxThread
 from Tribler.Main.vwxGUI.GuiUtility import GUIUtility
 from Tribler.Main.vwxGUI.widgets import _set_font, BetterText as StaticText
 from Tribler.Main.Dialogs.GUITaskQueue import GUITaskQueue
+from Tribler.Core.Utilities.bencode import bdecode, bencode
+import hashlib
 
 logger = logging.getLogger(__name__)
 
@@ -447,3 +449,47 @@ def make_meta_file(srcpaths, params, userabortflag, progressCallback, torrentfil
 
     # Inform higher layer we created torrent
     torrentfilenameCallback(basepath, basedir, torrentfilename)
+
+
+
+def create_anon_torrent(self, orig_torrent_file):
+    """
+    Reads a torrent file, and adds an anonymous=1 flag to the info section. 
+    New anonymous torrent file is saved afterwards, with the original and new info hash
+    replaced in the filename is returned as a result of this method.
+
+    If the .torrent file is already anonymous, this method returns None
+
+    @param orig_torrent_file string
+    @return string
+    """
+    assert isinstance(orig_torrent_file, str), "orig_torrent_file has invalid type: %s" % type(orig_torrent_file)
+    
+    # read original torrent as binary data
+    orig_torrent_handle = open(str(orig_torrent_file), 'rb')
+    decoded_torrent = bdecode(orig_torrent_handle.read())
+    orig_torrent_handle.close()
+    orig_torrent_hash = hashlib.sha1(bencode(decoded_torrent['info'])).hexdigest()
+    
+    # add anonymity and recalculate hash
+    decoded_torrent['info']['anonymous'] = 1
+    anon_torrent_hash = hashlib.sha1(bencode(decoded_torrent['info'])).hexdigest()
+    if orig_torrent_hash == anon_torrent_hash:
+        # already anonymous, nothing to do
+        self._logger.debug("CreateTorrent: create_anon_torrent: .torrent file %s already anonymous", orig_torrent_hash)
+        return None
+    
+    # create a new filename by replacing hashes (and prepending anon_ in case of failure)
+    anon_torrent_file = orig_torrent_file.replace(orig_torrent_hash, anon_torrent_hash)
+    if anon_torrent_file == orig_torrent_file:
+        dirname = os.path.dirname(orig_torrent_file)
+        basename = os.path.basename(orig_torrent_file)
+        anon_torrent_file = os.path.join(dirname, 'anon_' + basename)
+    
+    # write a new anonymous torrent file as binary data 
+    anon_torrent_handle = open(anon_torrent_file, 'wb')
+    anon_torrent_handle.write(bencode(decoded_torrent))
+    anon_torrent_handle.close()
+    
+    return anon_torrent_file
+
