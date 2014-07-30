@@ -1274,7 +1274,7 @@ class LibraryDetails(TorrentDetails):
 
     def updateNetworkGraphTab(self):
         self.networkgraphPanel.ShowTunnels(self.torrent.ds.get_download().get_anon_mode() if self.torrent.ds else False)
-
+        
     @warnWxThread
     def ShowPanel(self, newState=None):
         if newState and newState != self.state:
