@@ -80,9 +80,9 @@ class LibtorrentTest(object):
 
             return _callback
 
-        if self.has_completed_before():
-            self._logger.warning("Skipping Anon Test since it has been run before")
-            return False
+        #if self.has_completed_before():
+        #    self._logger.warning("Skipping Anon Test since it has been run before")
+        #    return False
 
         destination_dir = os.path.join(self.tribler_session.get_state_dir(), "anon_test")
 
@@ -91,17 +91,35 @@ class LibtorrentTest(object):
         except:
             pass
 
-        tdef = TorrentDef.load("anon_test.torrent")
-        tdef.set_private()  # disable dht
-        defaultDLConfig = DefaultDownloadStartupConfig.getInstance()
-        dscfg = defaultDLConfig.copy()
-        ''' :type : DefaultDownloadStartupConfig '''
+        
+        
+        from Tribler.Core.TorrentDef import TorrentDef
+        from Tribler.Core.DownloadConfig import DownloadStartupConfig
+        from Tribler.Core.Session import Session
+        from Tribler.Main.Dialogs.CreateTorrent import create_anon_torrent
+        tdef = TorrentDef()
+        
+        torrentfile = "ubuntu.torrent"
 
+        anontorrentfile = create_anon_torrent(tdef,torrentfile)
+        print "created"
+        tdef =  TorrentDef.load(anontorrentfile)
+        dscfg = DownloadStartupConfig()
+        dscfg.set_dest_dir("tmpdownload")
         dscfg.set_anon_mode(True)
-        dscfg.set_dest_dir(destination_dir)
+        self.tribler_session.start_download(tdef,dscfg)
+        
+        #tdef = TorrentDef.load("anon_test.torrent")
+        #tdef.set_private()  # disable dht
+        #defaultDLConfig = DefaultDownloadStartupConfig.getInstance()
+        #dscfg = defaultDLConfig.copy()
+        #''' :type : DefaultDownloadStartupConfig '''
 
-        self.download = self.tribler_session.start_download(tdef, dscfg)
-        self.download.set_state_callback(state_call(), delay=1)
+        #dscfg.set_anon_mode(True)
+        #dscfg.set_dest_dir(destination_dir)
 
-        for peer in hosts:
-            self.download.add_peer(peer)
+        #self.download = self.tribler_session.start_download(tdef, dscfg)
+        #self.download.set_state_callback(state_call(), delay=1)
+
+        #for peer in hosts:
+        #    self.download.add_peer(peer)
