@@ -1,8 +1,6 @@
 from Tribler.Core.TorrentDef import TorrentDef
 from Tribler.Core.DownloadConfig import DownloadStartupConfig
 from Tribler.Core.Session import Session
-from Tribler.Core.SessionConfig import SessionStartupConfig
-from libtorrent import bdecode
 from Tribler.Main.Dialogs.CreateTorrent import create_anon_torrent
 
 torrentfile = "../tribler/anon_test.torrent"
@@ -17,4 +15,5 @@ session.start()
 tdef =  TorrentDef.load(anontorrentfile)
 dscfg = DownloadStartupConfig()
 dscfg.set_dest_dir("tmpdownload")
+dscfg.set_anon_mode(True)
 session.start_download(tdef,dscfg)
