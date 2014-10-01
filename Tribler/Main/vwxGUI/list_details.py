@@ -410,7 +410,7 @@ class TorrentDetails(AbstractDetails):
 
         vSizer = wx.FlexGridSizer(0, 2, 3, 10)
         vSizer.AddGrowableCol(1)
-        vSizer.AddGrowableRow(1)
+        #vSizer.AddGrowableRow(1)
 
         self.isEditable['name'] = EditText(self.editTab, '')
         self.isEditable['description'] = EditText(self.editTab, '', True)
@@ -1488,7 +1488,7 @@ class ChannelDetails(AbstractDetails):
 
         fgSizer = wx.FlexGridSizer(0, 2, 3, 10)
         fgSizer.AddGrowableCol(1)
-        fgSizer.AddGrowableRow(6)
+        #fgSizer.AddGrowableRow(6)
 
         titles = ['Name', 'Description', 'Torrents', 'Latest update', 'Favorite votes']
         for title in titles:
@@ -1580,7 +1580,7 @@ class PlaylistDetails(AbstractDetails):
 
         fgSizer = wx.FlexGridSizer(0, 2, 3, 10)
         fgSizer.AddGrowableCol(1)
-        fgSizer.AddGrowableRow(6)
+        #fgSizer.AddGrowableRow(6)
 
         titles = ['Name', 'Description', 'Torrents']
         for title in titles:
@@ -2029,7 +2029,7 @@ class MyChannelPlaylist(AbstractDetails):
 
         gridSizer = wx.FlexGridSizer(0, 2, 3, 10)
         gridSizer.AddGrowableCol(1)
-        gridSizer.AddGrowableRow(1)
+        #gridSizer.AddGrowableRow(1)
 
         if can_edit:
             self.name = EditText(self, playlist.get('name', ''))
