@@ -149,13 +149,13 @@ class Session(SessionConfigInterface):
 
         self.sqlite_db = None
 
-    def prestart(self):
+    def prestart(self, db_path=None):
         """ Pre-starts the session. We check the currently version and upgrades if needed
         before we start everything else.
         """
         # initialize the database
         self.sqlite_db = SQLiteCacheDB(self)
-        self.sqlite_db.initialize()
+        self.sqlite_db.initialize(db_path)
         self.sqlite_db.initial_begin()
 
         # check and upgrade

@@ -18,7 +18,6 @@ from Tribler.Core.Libtorrent.LibtorrentDownloadImpl import VODFile
 from Tribler.Core.Video.utils import (win32_retrieve_video_play_command, quote_program_path, escape_path,
                                       return_feasible_playback_modes)
 from Tribler.Core.Video.defs import PLAYBACKMODE_INTERNAL, PLAYBACKMODE_EXTERNAL_MIME
-from Tribler.Core.Video.VideoUtility import get_videoinfo
 from Tribler.Core.Video.VideoServer import VideoServer
 from Tribler.Core.Video.VLCWrapper import VLCWrapper
 
@@ -125,6 +124,7 @@ class VideoPlayer(object):
             # Attempt to estimate the bitrate and duration of the videofile with ffmpeg.
             videofile = self.get_vod_filename(dl)
             videoanalyser = self.session.get_video_analyser_path()
+            from Tribler.Core.Video.VideoUtility import get_videoinfo
             duration, bitrate, _ = get_videoinfo(videofile, videoanalyser)
             self.vod_info[dl_hash]['bitrate'] = bitrate
             self.vod_info[dl_hash]['duration'] = duration
