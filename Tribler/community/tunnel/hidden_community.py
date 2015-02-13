@@ -90,6 +90,8 @@ class LinkRequestCache(RandomNumberCache):
 
 class HiddenTunnelCommunity(TunnelCommunity):
 
+    HIDDEN_COMMUNITY_MASTER_KEY = None
+
     def __init__(self, *args, **kwargs):
         super(HiddenTunnelCommunity, self).__init__(*args, **kwargs)
 
@@ -104,7 +106,16 @@ class HiddenTunnelCommunity(TunnelCommunity):
 
         self.dht_blacklist = defaultdict(list)
         self.last_dht_lookup = {}
+        
+    def initialize(self, *args, **kwargs):
+        super(HiddenTunnelCommunity, self).initialize(*args, **kwargs)
 
+    @classmethod
+    def get_master_members(cls, dispersy):
+        if cls.HIDDEN_COMMUNITY_MASTER_KEY is None:
+            keypair = dispersy.crypto.generate_key(u"curve25519")
+            cls.HIDDEN_COMMUNITY_MASTER_KEY = dispersy.get_member(private_key=dispersy.crypto.key_to_bin(keypair),)
+        
     def initiate_meta_messages(self):
         return super(HiddenTunnelCommunity, self).initiate_meta_messages() + \
                 [Message(self, u"key-request", NoAuthentication(), PublicResolution(), DirectDistribution(),
