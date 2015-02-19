@@ -15,7 +15,7 @@ from Tribler.Main.vwxGUI.widgets import _set_font, NotebookPanel, SimpleNotebook
 
 from Tribler.Category.Category import Category
 
-from Tribler.Core.simpledefs import NTFY_MISC, NTFY_USEREVENTLOG
+from Tribler.Core.simpledefs import NTFY_MISC
 from Tribler.Core.TorrentDef import TorrentDef
 from Tribler.Core.CacheDB.sqlitecachedb import forceDBThread
 from Tribler.Core.Utilities.utilities import get_collected_torrent_filename
@@ -699,12 +699,12 @@ class SelectedChannelList(GenericSearchList):
                 self.parent.sashpos = splitter.GetSashPosition()
                 splitter.Unsplit(bottomwindow)
 
-    def StartDownload(self, torrent, files=None):
+    def StartDownload(self, torrent):
         def do_gui(delayedResult):
             nrdownloaded = delayedResult.get()
             if nrdownloaded:
                 self._ShowFavoriteDialog(nrdownloaded)
-                GenericSearchList.StartDownload(self, torrent, files)
+                self.guiutility.torrentsearch_manager.downloadTorrent(torrent)
 
         def do_db():
             channel = self.channel
@@ -714,21 +714,12 @@ class SelectedChannelList(GenericSearchList):
         if not self.channel.isFavorite():
             startWorker(do_gui, do_db, retryOnBusy=True, priority=GUI_PRI_DISPERSY)
         else:
-            GenericSearchList.StartDownload(self, torrent, files)
+            self.guiutility.torrentsearch_manager.downloadTorrent(torrent)
 
     def _ShowFavoriteDialog(self, nrdownloaded):
-        def do_db(favorite):
-            if favorite:
-                self.uelog.addEvent(message="ChannelList: user clicked yes to mark as favorite", type=2)
-            else:
-                self.uelog.addEvent(message="ChannelList: user clicked no to mark as favorite", type=2)
-
         dial = wx.MessageDialog(None, "You downloaded %d torrents from this Channel. 'Mark as favorite' will ensure that you will always have access to newest channel content.\n\nDo you want to mark this channel as one of your favorites now?" % nrdownloaded, 'Mark as Favorite?', wx.YES_NO | wx.YES_DEFAULT | wx.ICON_QUESTION)
         if dial.ShowModal() == wx.ID_YES:
             self.OnFavorite()
-            startWorker(None, do_db, wargs=(True,))
-        else:
-            startWorker(None, do_db, wargs=(False,))
 
         dial.Destroy()
 
@@ -1121,7 +1112,6 @@ class ManageChannel(AbstractDetails):
         self.rss_url = None
 
         self.guiutility = GUIUtility.getInstance()
-        self.uelog = self.guiutility.utility.session.open_dbhandler(NTFY_USEREVENTLOG)
         self.torrentfeed = RssParser.getInstance()
         self.channelsearch_manager = self.guiutility.channelsearch_manager
 
@@ -1452,6 +1442,9 @@ class ManageChannel(AbstractDetails):
 
     @forceDBThread
     def SetChannelId(self, channel_id):
+        if not (self and self.channelsearch_manager):
+            return
+
         channel = self.channelsearch_manager.getChannel(channel_id)
         self.SetChannel(channel)
 
@@ -1497,15 +1490,11 @@ class ManageChannel(AbstractDetails):
             self.torrentfeed.addURL(url, self.channel.id)
             self.RebuildRssPanel()
 
-            self.uelog.addEvent(message="MyChannel: rssfeed added", type=2)
-
     def OnDeleteRss(self, event):
         item = event.GetEventObject()
 
         self.torrentfeed.deleteURL(item.url, self.channel.id)
         self.RebuildRssPanel()
-
-        self.uelog.addEvent(message="MyChannel: rssfeed removed", type=2)
 
     def OnRefreshRss(self, event):
         self.torrentfeed.doRefresh()
@@ -1513,8 +1502,6 @@ class ManageChannel(AbstractDetails):
         button = event.GetEventObject()
         button.Enable(False)
         wx.CallLater(5000, button.Enable, True)
-
-        self.uelog.addEvent(message="MyChannel: rssfeed refreshed", type=2)
 
     def CreateJoinChannelFile(self):
         f = open('joinchannel', 'wb')

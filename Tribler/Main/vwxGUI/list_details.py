@@ -13,7 +13,7 @@ from Tribler.Core.osutils import startfile
 from Tribler.Core.simpledefs import (DLSTATUS_ALLOCATING_DISKSPACE, DLSTATUS_WAITING4HASHCHECK, DLSTATUS_HASHCHECKING,
                                      DLSTATUS_DOWNLOADING, DLSTATUS_SEEDING, DLSTATUS_STOPPED,
                                      DLSTATUS_STOPPED_ON_ERROR, DLSTATUS_METADATA, UPLOAD, DOWNLOAD, NTFY_TORRENTS,
-                                     NTFY_USEREVENTLOG, NTFY_VIDEO_ENDED, DLMODE_VOD)
+                                     NTFY_VIDEO_ENDED, DLMODE_VOD)
 from Tribler.Core.CacheDB.sqlitecachedb import forceDBThread
 from Tribler.Core.Video.utils import videoextdefaults
 from Tribler.Core.Video.VideoUtility import limit_resolution
@@ -127,7 +127,6 @@ class TorrentDetails(AbstractDetails):
 
         self.guiutility = GUIUtility.getInstance()
         self.utility = self.guiutility.utility
-        self.uelog = self.utility.session.open_dbhandler(NTFY_USEREVENTLOG)
 
         self.parent = parent
         self.torrent = Torrent('0', '0', '', '', 0, 0, 0, 0, 0, None)
@@ -178,8 +177,7 @@ class TorrentDetails(AbstractDetails):
             self.torrent = torrent
             self.showTorrent(self.torrent)
 
-            filename = self.guiutility.torrentsearch_manager.getCollectedFilename(self.torrent, retried=True)
-            if filename:
+            if self.guiutility.utility.session.has_collected_torrent(self.torrent.infohash):
                 self.guiutility.torrentsearch_manager.loadTorrent(self.torrent, callback=self.showTorrent)
             else:
                 def doGui(delayedResult):
@@ -740,18 +738,6 @@ class TorrentDetails(AbstractDetails):
             editable.Saved()
 
     @warnWxThread
-    def OnDrag(self, event):
-        if event.LeftIsDown():
-            filename = self.guiutility.torrentsearch_manager.getCollectedFilename(self.torrent)
-            if filename:
-                tdo = wx.FileDataObject()
-                tdo.AddFile(filename)
-
-                tds = wx.DropSource(self)
-                tds.SetData(tdo)
-                tds.DoDragDrop(True)
-
-    @warnWxThread
     def OnDoubleClick(self, event):
         selected = self.filesList.GetFirstSelected()
         playable_files = self.torrent.videofiles
@@ -895,6 +881,9 @@ class TorrentDetails(AbstractDetails):
 
     @forceDBThread
     def UpdateHealth(self):
+        if not (self and self.torrent and self.torrent.swarminfo):
+            return
+
         # touch swarminfo property
         _, _, last_check = self.torrent.swarminfo
 
@@ -1451,7 +1440,6 @@ class ChannelDetails(AbstractDetails):
 
         self.guiutility = GUIUtility.getInstance()
         self.utility = self.guiutility.utility
-        self.uelog = self.utility.session.open_dbhandler(NTFY_USEREVENTLOG)
 
         self.parent = parent
         self.channel = None
@@ -1541,7 +1529,6 @@ class PlaylistDetails(AbstractDetails):
 
         self.guiutility = GUIUtility.getInstance()
         self.utility = self.guiutility.utility
-        self.uelog = self.utility.session.open_dbhandler(NTFY_USEREVENTLOG)
 
         self.parent = parent
         self.playlist = None
@@ -1690,7 +1677,6 @@ class AbstractInfoPanel(FancyPanel):
 
         self.guiutility = GUIUtility.getInstance()
         self.utility = self.guiutility.utility
-        self.uelog = self.utility.session.open_dbhandler(NTFY_USEREVENTLOG)
 
         self.parent = parent
         self.SetBackgroundColour(GRADIENT_LGREY, GRADIENT_DGREY)

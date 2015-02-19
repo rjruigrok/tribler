@@ -6,6 +6,7 @@ import copy
 import logging
 import os
 import socket
+from binascii import hexlify
 
 from Tribler.Core import NoDispersyRLock
 from Tribler.Core.APIImplementation.LaunchManyCore import TriblerLaunchMany
@@ -15,14 +16,10 @@ from Tribler.Core.SessionConfig import SessionConfigInterface, SessionStartupCon
 from Tribler.Core.Upgrade.upgrade import TriblerUpgrader
 from Tribler.Core.exceptions import NotYetImplementedException, OperationNotEnabledByConfigurationException
 from Tribler.Core.osutils import get_appstate_dir
-from Tribler.Core.simpledefs import (STATEDIR_PEERICON_DIR,
-                                     STATEDIR_DLPSTATE_DIR, STATEDIR_SESSCONFIG,
-                                     NTFY_MISC, NTFY_PEERS,
-                                     NTFY_BUNDLERPREFERENCE, NTFY_TORRENTS,
-                                     NTFY_MYPREFERENCES, NTFY_VOTECAST,
-                                     NTFY_CHANNELCAST, NTFY_UPDATE,
-                                     NTFY_USEREVENTLOG, NTFY_INSERT, NTFY_DELETE,
-                                     NTFY_METADATA, STATEDIR_TORRENT_STORE_DIR)
+from Tribler.Core.simpledefs import (STATEDIR_PEERICON_DIR, STATEDIR_DLPSTATE_DIR, STATEDIR_SESSCONFIG,
+                                     NTFY_MISC, NTFY_PEERS, NTFY_BUNDLERPREFERENCE, NTFY_TORRENTS,
+                                     NTFY_MYPREFERENCES, NTFY_VOTECAST, NTFY_CHANNELCAST, NTFY_UPDATE,
+                                     NTFY_INSERT, NTFY_DELETE, NTFY_METADATA, STATEDIR_TORRENT_STORE_DIR)
 
 
 GOTM2CRYPTO = False
@@ -276,6 +273,14 @@ class Session(SessionConfigInterface):
         # locking by lm
         return self.lm.get_download(infohash)
 
+    def has_download(self, infohash):
+        """
+        Checks if the torrent download already exists.
+        :param infohash: The torrent infohash.
+        :return: True or False indicating if the torrent download already exists.
+        """
+        return self.lm.download_exists(infohash)
+
     def remove_download(self, d, removecontent=False, removestate=True, hidden=False):
         """
         Stops the download and removes it from the session.
@@ -441,8 +446,6 @@ class Session(SessionConfigInterface):
             return self.lm.votecast_db
         elif subject == NTFY_CHANNELCAST:
             return self.lm.channelcast_db
-        elif subject == NTFY_USEREVENTLOG:
-            return self.lm.ue_db
         elif subject == NTFY_BUNDLERPREFERENCE:
             return self.lm.bundlerpref_db
         else:
@@ -630,3 +633,20 @@ class Session(SessionConfigInterface):
         @param trackers A list of tracker urls.
         """
         return self.lm.update_trackers(id, trackers)
+
+    # New APIs
+    def has_collected_torrent(self, infohash):
+        """
+        Checks if the given torrent infohash exists in the torrent_store database.
+        :param infohash: The given infohash binary.
+        :return: True or False indicating if we have the torrent.
+        """
+        return hexlify(infohash) in self.lm.torrent_store
+
+    def get_collected_torrent(self, infohash):
+        """
+        Gets the given torrent from the torrent_store database.
+        :param infohash: The given infohash binary.
+        :return: The torrent data if exists, None otherwise.
+        """
+        return self.lm.torrent_store.get(hexlify(infohash))

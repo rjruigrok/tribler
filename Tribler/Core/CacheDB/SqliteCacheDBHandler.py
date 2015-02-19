@@ -1434,7 +1434,7 @@ class MyPreferenceDBHandler(BasicDBHandler):
 
         self.rlock = threading.RLock()
 
-        self.recent_preflist = self.recent_preflist_with_clicklog = self.recent_preflist_with_swarmsize = None
+        self.recent_preflist = None
         self.status_good = None
         self._torrent_db = None
 
@@ -1500,24 +1500,6 @@ class MyPreferenceDBHandler(BasicDBHandler):
             return self.recent_preflist[:num]
         else:
             return self.recent_preflist
-
-    def addClicklogToMyPreference(self, infohash, clicklog_data):
-        torrent_id = self._torrent_db.getTorrentID(infohash)
-        clicklog_already_stored = False  # equivalent to hasMyPreference TODO
-        if torrent_id is None or clicklog_already_stored:
-            return False
-
-        d = {}
-        # copy those elements of the clicklog data which are used in the update command
-        for clicklog_key in ["click_position", "reranking_strategy"]:
-            if clicklog_key in clicklog_data:
-                d[clicklog_key] = clicklog_data[clicklog_key]
-
-        if d == {}:
-            self._logger.debug("no updatable information given to addClicklogToMyPreference")
-        else:
-            self._logger.debug("addClicklogToMyPreference: updatable clicklog data: %s", d)
-            self._db.update(self.table_name, 'torrent_id=%d' % torrent_id, **d)
 
     def hasMyPreference(self, torrent_id):
         res = self.getOne('torrent_id', torrent_id=torrent_id)
@@ -2679,53 +2661,6 @@ class ChannelCastDBHandler(BasicDBHandler):
                 elif channel[5] == best_channel[5] and channel[4] > best_channel[4]:
                     best_channel = channel
             return best_channel
-
-
-class UserEventLogDBHandler(BasicDBHandler):
-
-    """
-    The database handler for logging user events.
-    """
-    # maximum number of events to store
-    # when this maximum is reached, approx. 50% of the entries are deleted.
-    MAX_EVENTS = 2 * 10000
-
-    def __init__(self, session):
-        super(UserEventLogDBHandler, self).__init__(session, u"UserEventLog")
-
-        self.count = -1
-
-    def addEvent(self, message, type=1, timestamp=None):
-        """
-        Log a user event to the database. Commits automatically.
-
-        @param message A message (string) describing the event.
-        @param type Optional type of event (default: 1). There is no
-        mechanism to register user event types.
-        @param timestamp Optional timestamp of the event. If omitted,
-        the current time is used.
-        """
-        if timestamp is None:
-            timestamp = time()
-        self._db.insert(self.table_name,
-                        timestamp=timestamp, type=type, message=message)
-
-        if self.count == -1:
-            self.count = self._db.size(self.table_name)
-        else:
-            self.count += 1
-
-        if self.count > UserEventLogDBHandler.MAX_EVENTS:
-            sql = \
-                '''
-            DELETE FROM UserEventLog
-            WHERE timestamp < (SELECT MIN(timestamp)
-                               FROM (SELECT timestamp
-                                     FROM UserEventLog
-                                     ORDER BY timestamp DESC LIMIT %s))
-            ''' % (UserEventLogDBHandler.MAX_EVENTS / 2)
-            self._db.execute_write(sql)
-            self.count = self._db.size(self.table_name)
 
 
 class BundlerPreferenceDBHandler(BasicDBHandler):

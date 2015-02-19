@@ -420,7 +420,7 @@ class ABCApp(object):
                                             'We are a torrent client and aim to protect you against lawyer-based '
                                             'attacks and censorship.\n'
                                             'With help from many volunteers we are continuously evolving and improving.'
-                                            '\n\nI you aren\'t sure, press Cancel to disable the \n'
+                                            '\n\nIf you aren\'t sure, press Cancel to disable the \n'
                                             'experimental anonymity feature',
                                             'Do you want to use the experimental anonymity feature?',
                                             wx.ICON_WARNING | wx.OK | wx.CANCEL)
@@ -500,6 +500,7 @@ class ABCApp(object):
             from Tribler.community.metadata.community import MetadataCommunity
             from Tribler.community.tunnel.tunnel_community import TunnelSettings
             from Tribler.community.tunnel.hidden_community import HiddenTunnelCommunity
+            from Tribler.community.bartercast4.community import BarterCommunity
 
             # make sure this is only called once
             session.remove_observer(define_communities)
@@ -515,6 +516,7 @@ class ABCApp(object):
             # must be called on the Dispersy thread
             dispersy.define_auto_load(SearchCommunity, session.dispersy_member, load=True, kargs=default_kwargs)
             dispersy.define_auto_load(AllChannelCommunity, session.dispersy_member, load=True, kargs=default_kwargs)
+            dispersy.define_auto_load(BarterCommunity, session.dispersy_member, load=True)
 
             # load metadata community
             # dispersy.define_auto_load(MetadataCommunity, session.dispersy_member, load=True, kargs=default_kwargs)
