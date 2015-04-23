@@ -53,9 +53,15 @@ def threaded_reactor():
             reactor.suggestThreadPoolSize(1)
             reactor.run(installSignalHandlers=False)
 
-        _twisted_thread = Thread(target=_reactor_runner, name="Twisted")
-        _twisted_thread.setDaemon(True)
-        _twisted_thread.start()
+        if reactor.running:
+            import logging
+            print "Twisted reactor is already running"
+            _twisted_thread = True
+            log.msg("Twisted reactor is already running", logLevel=logging.ERROR)
+        else:
+            _twisted_thread = Thread(target=_reactor_runner, name="Twisted")
+            _twisted_thread.setDaemon(True)
+            _twisted_thread.start()
 
         def hook_observer():
             observer = log.PythonLoggingObserver()
