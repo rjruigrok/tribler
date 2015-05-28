@@ -231,7 +231,7 @@ class RoundRobin(object):
                circuit.ctype == CIRCUIT_TYPE_RENDEZVOUS:
                 return circuit
 
-        circuit_ids = sorted(self.community.active_data_circuits(hops).keys())
+        circuit_ids = sorted(self.community.active_data_circuits().keys())
 
         if not circuit_ids:
             return None
@@ -477,9 +477,11 @@ class TunnelCommunity(Community):
         assert required_exit is None or len(required_exit) == 3, required_exit
         retry_lambda = first_hop = None
 
+        self._logger.error("A")
         if max_retries > 0:
             retry_lambda = lambda h = goal_hops, t = ctype, c = callback, r = max_retries - 1, e = required_exit: \
                 self.create_circuit(h, t, c, r, e)
+        self._logger.error("B")
 
         hops = set([c.first_hop for c in self.circuits.values()])
         for c in self.dispersy_yield_verified_candidates():
@@ -487,40 +489,49 @@ class TunnelCommunity(Community):
                (not required_exit or c.sock_addr != tuple(required_exit[:2])):
                 first_hop = c
                 break
+        self._logger.error("C")
 
         if not required_exit:
-            self._logger.debug("Look for exit node to set as required_exit for this circuit")
+            self._logger.error("Look for exit node to set as required_exit for this circuit")
             # Each circuit's exit node should be a verified connectable exit node peer chosen by the circuit initiator
             for c in self.dispersy_yield_verified_candidates():
                 pubkey = c.get_member().public_key
                 exit_candidate = self.exit_candidates[pubkey]
                 if exit_candidate.become_exit:
-                    self._logger.debug("Valid exit candidate found for this circuit")
+                    self._logger.error("Valid exit candidate found for this circuit")
                     required_exit = (c.sock_addr[0], c.sock_addr[1], pubkey)
-                    # When circuit length is one, the first hop should immediately be the exiting one
-                    if goal_hops == 1:
-                        first_hop = c
 
                     # Stop looking for a better alternative if the exit-node is not used for exiting in another circuit
                     if self.candidate_is_connectable(c):
-                        self._logger.debug("Exit node is connectable and not used in other circuits, that's prefered")
+                        self._logger.error("Exit node is connectable and not used in other circuits, that's prefered")
                         break
+        self._logger.error("D")
+
+        # When circuit length is one, the first hop should immediately be the exiting one
+        if goal_hops == 1:
+            for c in self.dispersy_yield_verified_candidates():
+                if c.sock_addr == tuple(required_exit[:2]):
+                    self._logger.error("Set first hop to the candidate of required_exit")
+                    first_hop = c
+        self._logger.error("E")
 
         if not required_exit:
             if retry_lambda:
-                self._logger.info("could not create circuit, no available exit-nodes found, will retry in 5 seconds.")
+                self._logger.error("could not create circuit, no available exit-nodes found, will retry in 5 seconds.")
                 self.register_task(retry_lambda, reactor.callLater(5, retry_lambda))
             else:
-                self._logger.info("could not create circuit, no available exit-nodes.")
+                self._logger.error("could not create circuit, no available exit-nodes.")
             return False
+        self._logger.error("F")
 
         if not first_hop:
             if retry_lambda:
-                self._logger.info("could not create circuit, no available relay for first hop, will retry in 5 seconds.")
+                self._logger.error("could not create circuit, no available relay for first hop, will retry in 5 seconds.")
                 self.register_task(retry_lambda, reactor.callLater(5, retry_lambda))
             else:
-                self._logger.info("could not create circuit, no available relay for first hop.")
+                self._logger.error("could not create circuit, no available relay for first hop.")
             return False
+        self._logger.error("G")
 
         circuit_id = self._generate_circuit_id(first_hop.sock_addr)
         circuit = Circuit(circuit_id, goal_hops, first_hop.sock_addr, self, ctype, callback,
@@ -531,12 +542,14 @@ class TunnelCommunity(Community):
         circuit.unverified_hop = Hop(first_hop.get_member()._ec)
         circuit.unverified_hop.address = first_hop.sock_addr
         circuit.unverified_hop.dh_secret, circuit.unverified_hop.dh_first_part = self.crypto.generate_diffie_secret()
+        self._logger.error("H")
 
         self._logger.info("creating circuit %d of %d hops. First hop: %s:%d", circuit_id,
                           circuit.goal_hops, first_hop.sock_addr[0], first_hop.sock_addr[1])
 
         self.circuits[circuit_id] = circuit
         self.waiting_for.add(circuit_id)
+        self._logger.error("I")
 
         self.increase_bytes_sent(circuit, self.send_cell([first_hop],
                                                          u"create", (circuit_id,

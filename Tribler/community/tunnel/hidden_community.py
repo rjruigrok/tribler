@@ -229,6 +229,7 @@ class HiddenTunnelCommunity(TunnelCommunity):
                     # Blacklist this sock_addr for a period of at least 60s
                     self.dht_blacklist[info_hash].append((time.time(), peer))
 
+                    self._logger.error("Create key request")
                     self.create_key_request(info_hash, peer)
 
         self._logger.debug("Doing dht lookup for hidden community")
@@ -363,6 +364,7 @@ class HiddenTunnelCommunity(TunnelCommunity):
             _, rp_info = decode(self.crypto.decrypt_str(
                 message.payload.rp_sock_addr, session_keys[EXIT_NODE], session_keys[EXIT_NODE_SALT]))
 
+            self._logger.error("Create circuit for e2e link")
             self.create_circuit(DEFAULT_HOPS, CIRCUIT_TYPE_RENDEZVOUS, callback=lambda circuit, cookie=rp_info[
                                 1], session_keys=session_keys, info_hash=cache.info_hash,
                                 sock_addr=cache.sock_addr: self.create_link_e2e(circuit, cookie, session_keys,
@@ -370,6 +372,7 @@ class HiddenTunnelCommunity(TunnelCommunity):
                                 max_retries=5, required_exit=rp_info[0])
 
     def create_link_e2e(self, circuit, cookie, session_keys, info_hash, sock_addr):
+        self._logger.error("Linking to the rendezvous point")
         self.my_download_points[circuit.circuit_id] = (info_hash, circuit.goal_hops, sock_addr)
         circuit.hs_session_keys = session_keys
 
