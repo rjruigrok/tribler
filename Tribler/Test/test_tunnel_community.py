@@ -248,7 +248,7 @@ class TestTunnelCommunity(TestGuiAsServer):
                                  lambda: download.get_progress() == 1.0,
                                  lambda: take_screenshot(time.time() - start_time),
                                  'Hidden services download should be finished in 140 seconds (%.1f%% downloaded)' %
-                                     (download.get_progress() * 100),
+                                 (download.get_progress() * 100),
                                  on_fail)
 
         def start_download(tf):
@@ -271,8 +271,8 @@ class TestTunnelCommunity(TestGuiAsServer):
             seeder_session.set_anon_proxy_settings(
                 2, ("127.0.0.1", seeder_session.get_tunnel_community_socks5_listen_ports()))
             seeder_session.set_download_states_callback(download_states_callback, False)
-            
-            # Start seeding            
+
+            # Start seeding
             tf = self.setupSeeder(hops=2, session=seeder_session)
 
             # Wait for the introduction point to announce itself to the DHT
@@ -290,7 +290,7 @@ class TestTunnelCommunity(TestGuiAsServer):
                                  'Introduction point did not get announced')
 
         self.startTest(setup_seeder, nr_relays=6, nr_exitnodes=4, bypass_dht=True)
-        
+
     def test_hidden_services_with_exit_nodes(self):
         def take_second_screenshot():
             self.screenshot()
@@ -312,13 +312,12 @@ class TestTunnelCommunity(TestGuiAsServer):
                 self.assert_(expected, reason, do_assert)
 
             self.Call(1, do_asserts)
-            
 
         def do_progress(d, start_time):
             # Check for progress from both seeders
             hs_progress = Event()
             en_progress = Event()
-            
+
             def cb(ds):
                 for peer in ds.get_peerlist():
                     if peer['dtotal'] > 0:
@@ -327,9 +326,9 @@ class TestTunnelCommunity(TestGuiAsServer):
                         elif peer['port'] == CIRCUIT_ID_PORT:
                             hs_progress.set()
                 return 5.0, True
-                    
+
             d.set_state_callback(cb, True)
-            
+
             self.CallConditional(140,
                                  lambda: d.get_progress() == 1.0 and hs_progress.is_set() and en_progress.is_set(),
                                  lambda: take_screenshot(time.time() - start_time),
@@ -338,10 +337,10 @@ class TestTunnelCommunity(TestGuiAsServer):
         def start_download(tf):
             start_time = time.time()
             download = self.guiUtility.frame.startDownload(torrentfilename=tf, destdir=self.getDestDir(), hops=2)
-            
+
             # Inject IP of the 2nd seeder so that the download starts using both hidden services & exit tunnels
             self.Call(15, lambda: download.add_peer(("127.0.0.1", self.sessions[1].get_listen_port())))
-            
+
             self.guiUtility.ShowPage('my_files')
             do_progress(download, start_time)
 
@@ -360,7 +359,7 @@ class TestTunnelCommunity(TestGuiAsServer):
             seeder_session.set_anon_proxy_settings(
                 2, ("127.0.0.1", seeder_session.get_tunnel_community_socks5_listen_ports()))
             seeder_session.set_download_states_callback(download_states_callback, False)
-            
+
             # Start seeding with hidden services
             tf = self.setupSeeder(hops=2, session=seeder_session)
 
@@ -385,7 +384,6 @@ class TestTunnelCommunity(TestGuiAsServer):
 
     def startTest(self, callback, min_timeout=5, nr_relays=5, nr_exitnodes=3, crypto_enabled=True, bypass_dht=False):
         from Tribler.Main import tribler_main
-        tribler_main.FORCE_ENABLE_TUNNEL_COMMUNITY = True
         tribler_main.TUNNEL_COMMUNITY_DO_TEST = False
 
         self.getStateDir()  # getStateDir copies the bootstrap file into the statedir
@@ -403,19 +401,19 @@ class TestTunnelCommunity(TestGuiAsServer):
             if bypass_dht:
                 # Replace pymdht with a fake one
                 class FakeDHT(object):
-    
+
                     def __init__(self, dht_dict, mainline_dht):
                         self.dht_dict = dht_dict
                         self.mainline_dht = mainline_dht
-    
+
                     def get_peers(self, lookup_id, _, callback_f, bt_port=0):
                         if bt_port != 0:
                             self.dht_dict[lookup_id] = self.dht_dict.get(lookup_id, []) + [('127.0.0.1', bt_port)]
                         callback_f(lookup_id, self.dht_dict.get(lookup_id, None), None)
-    
+
                     def stop(self):
                         self.mainline_dht.stop()
-    
+
                 dht_dict = {}
                 for session in self.sessions + [self.session]:
                     session.lm.mainline_dht = FakeDHT(dht_dict, session.lm.mainline_dht)
@@ -469,7 +467,10 @@ class TestTunnelCommunity(TestGuiAsServer):
                 if not crypto_enabled:
                     settings.crypto = NoCrypto()
                 settings.become_exitnode = become_exit_node
-                return dispersy.define_auto_load(HiddenTunnelCommunity, dispersy_member, (session, settings), load=True)[0]
+                return dispersy.define_auto_load(HiddenTunnelCommunity,
+                                                 dispersy_member,
+                                                 (session, settings),
+                                                 load=True)[0]
 
             return blockingCallFromThread(reactor, load_community, session)
 

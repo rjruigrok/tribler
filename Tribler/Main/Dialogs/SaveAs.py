@@ -28,8 +28,7 @@ class SaveAs(wx.Dialog):
 
         self.guiutility = GUIUtility.getInstance()
         self.utility = self.guiutility.utility
-        self.tunnel_community_enabled = self.utility.session.get_tunnel_community_enabled()
-        self.SetSize((600, 550 if self.tunnel_community_enabled else 450))
+        self.SetSize((600, 550))
 
         self.filehistory = []
         try:
