@@ -550,7 +550,7 @@ class TunnelCommunity(Community):
         assert isinstance(circuit_id, (long, int)), type(circuit_id)
 
         if circuit_id in self.circuits:
-            self._logger.debug("removing circuit %d " + additional_info, circuit_id)
+            self._logger.error("removing circuit %d " + additional_info, circuit_id)
 
             if destroy:
                 self.destroy_circuit(circuit_id)
@@ -592,7 +592,7 @@ class TunnelCommunity(Community):
 
         for cid in to_remove:
             if cid in self.relay_from_to:
-                self._logger.warning("Removing relay %d %s", cid, additional_info)
+                self._logger.error("Removing relay %d %s", cid, additional_info)
                 # Remove the relay
                 del self.relay_from_to[cid]
                 # Remove old session key
@@ -1117,7 +1117,8 @@ class TunnelCommunity(Community):
             elif circuit_id in self.exit_sockets:
                 self._logger.debug("Got an exit socket %s %s", circuit_id, cand_sock_addr)
                 if cand_sock_addr != self.exit_sockets[circuit_id].sock_addr:
-                    self._logger.error("%s not allowed send destroy", cand_sock_addr)
+                    self._logger.error("%s not allowed send destroy, expected %s" % (cand_sock_addr,
+                                       self.exit_sockets[circuit_id].sock_addr))
                     continue
                 self.remove_exit_socket(circuit_id, "Got destroy")
 
@@ -1177,7 +1178,7 @@ class TunnelCommunity(Community):
         elif circuit_id in self.exit_sockets:
             if not self.exit_sockets[circuit_id].enabled:
                 # We got the correct circuit_id, but from a wrong IP.
-                assert sock_addr == self.exit_sockets[circuit_id].sock_addr, "%s != %s" % (
+                assert sock_addr[0] == self.exit_sockets[circuit_id].sock_addr[0], "%s != %s" % (
                     str(sock_addr), str(self.exit_sockets[circuit_id].sock_addr))
                 self.exit_sockets[circuit_id].enable()
             try:
